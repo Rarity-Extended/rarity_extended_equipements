@@ -41,6 +41,7 @@ describe('Tests With Dummy', () => {
 		rarityExtendedEquipement = await RarityExtendedEquipement.new()
 		dummyArmor = await DummyArmor.new()
 		dummyArmorCodex = await DummyArmorCodex.new()
+		console.log(rarityExtendedEquipement)
     });
 
 	

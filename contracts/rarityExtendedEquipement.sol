@@ -123,7 +123,7 @@ contract rarity_extended_armor is rarity_extended_equipement_base {
         require(armor[_adventurer].token == address(0), "!already");
 
         armor[_adventurer] = Armor(_tokenID, _codex, _codex, false);
-        IERC721(_tokenSource).safeTransferFrom(_operator, address(this), _tokenID);
+        IERC721(_codex).safeTransferFrom(_operator, address(this), _tokenID);
     }
 
     /**
