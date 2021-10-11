@@ -35,6 +35,8 @@ contract theForest_armor_codex {
             return dead_hero_cape();
         } else if (_id == 3) {
             return slain_warrior_armor();
+        } else if (_id == 4) {
+            return random_shield();
         }
     }
 
@@ -108,5 +110,29 @@ contract theForest_armor_codex {
         penalty = -4;
         spell_failure = 25;
         description = "I hope you find it useful.";
+    }
+
+    function random_shield() public pure returns (
+        uint id,
+        uint cost,
+        uint proficiency,
+        uint weight,
+        uint armor_bonus,
+        uint max_dex_bonus,
+        int penalty,
+        uint spell_failure,
+        string memory name,
+        string memory description
+    ) {
+        id = 4;
+        name = "It's a random shield";
+        cost = 200e18;
+        proficiency = 4;
+        weight = 30;
+        armor_bonus = 5;
+        max_dex_bonus = 3;
+        penalty = -4;
+        spell_failure = 25;
+        description = "Yep, random";
     }
 }

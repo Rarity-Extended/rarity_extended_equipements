@@ -38,7 +38,7 @@ contract theForestProxyItems {
         if (_base_type == 1) {
             return (1 <= _item_type && _item_type <= 34);
         } else if (_base_type == 2) {
-            return (1 <= _item_type && _item_type <= 3);
+            return (1 <= _item_type && _item_type <= 4);
         } else if (_base_type == 3) {
             return (1 <= _item_type && _item_type <= 7);
         } else if (_base_type == 4) {
@@ -90,6 +90,7 @@ contract theForestProxyItems {
 		if (compareStrings(_itemName, "Haunted cloak")) return (item(2, 1, 0, 0));
 		if (compareStrings(_itemName, "Dead hero cape")) return (item(2, 2, 0, 0));
 		if (compareStrings(_itemName, "Slain warrior armor")) return (item(2, 3, 0, 0));
+		if (compareStrings(_itemName, "It's a random shield")) return (item(2, 4, 0, 0));
 
 		//Weapons
         if (compareStrings(_itemName, "Black gauntlet")) return (item(3, 1, 0, 0));

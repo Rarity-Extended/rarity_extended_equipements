@@ -768,6 +768,14 @@ contract TheRarityForestV3 is ERC721Enumerable {
         emit TreasureDiscovered(summonerId, newTokenId);
         return newTokenId;
     }
+    function discoverShield(uint256 summonerId) public returns (uint256) {
+        uint256 newTokenId = safeMint(summonerId);
+		items[newTokenId] = "It's a random shield";
+		magic[newTokenId] = 1;
+		level[newTokenId] = 2;
+        emit TreasureDiscovered(summonerId, newTokenId);
+        return newTokenId;
+    }
 
     //Level up an item, spending summoner XP (need approval)
     function levelUp(uint256 tokenId) public {

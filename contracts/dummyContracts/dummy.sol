@@ -384,7 +384,7 @@ interface rarity {
     function spend_xp(uint _summoner, uint _xp) external;
 }
 
-contract dummy_armor is ERC721Enumerable {
+contract dummy is ERC721Enumerable {
     uint public next_item;
 
     rarity constant _rm = rarity(0xce761D788DF608BD21bdd59d6f4B54b2e27F25Bb);
@@ -414,7 +414,7 @@ contract dummy_armor is ERC721Enumerable {
         if (_base_type == 1) {
             return (0 <= _item_type && _item_type <= 0);
         } else if (_base_type == 2) {
-            return (1 <= _item_type && _item_type <= 3);
+            return (1 <= _item_type && _item_type <= 4);
         } else if (_base_type == 3) {
             return (0 <= _item_type && _item_type <= 0);
         }
@@ -440,6 +440,8 @@ contract dummy_armor is ERC721Enumerable {
             _type = "Armor";
         } else if (_type_id == 3) {
             _type = "Weapons";
+        } else if (_type_id == 4) {
+            _type = "Jewelries";
         }
     }
 }

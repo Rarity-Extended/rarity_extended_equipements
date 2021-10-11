@@ -2,8 +2,8 @@ require("dotenv").config();
 const { expect, use } = require('chai');
 const { solidity } = require('ethereum-waffle');
 const { deployments, ethers } = require('hardhat');
-const RarityExtendedEquipement = artifacts.require("rarity_extended_equipement");
-const DummyArmor = artifacts.require("dummy_armor");
+const RarityExtendedEquipements = artifacts.require("rarity_extended_equipements");
+const Dummy = artifacts.require("dummy");
 const DummyArmorCodex = artifacts.require("dummy_codex_items_armor");
 
 const DummyRC = artifacts.require("rarity_crafting");
@@ -24,9 +24,9 @@ const	RARITY_ADDRESS = '0xce761D788DF608BD21bdd59d6f4B54b2e27F25Bb'
 let		RARITY;
 
 describe('Tests With Dummy', () => {
-	let		rarityExtendedEquipement;
-	let		dummyArmor;
-	let		dummyArmorCodex;
+	let		rarityExtendedEquipements;
+	let		dummy;
+	let		dummyCodex;
     let		user;
 	let		adventurerPool = [];
 
@@ -38,14 +38,14 @@ describe('Tests With Dummy', () => {
 			'function summon(uint _class) external',
 			'function setApprovalForAll(address operator, bool _approved) external',
 		], user);
-		rarityExtendedEquipement = await RarityExtendedEquipement.new()
-		dummyArmor = await DummyArmor.new()
-		dummyArmorCodex = await DummyArmorCodex.new()
+		rarityExtendedEquipements = await RarityExtendedEquipements.new()
+		dummy = await Dummy.new()
+		dummyCodex = await DummyArmorCodex.new()
     });
 
 	
 	it('should be possible to get the name of the contract', async function() {
-		const	name = await rarityExtendedEquipement.name();
+		const	name = await rarityExtendedEquipements.name();
 		await	expect(name).to.be.equal('Rarity Extended Equipement');
 	})
 
@@ -65,10 +65,10 @@ describe('Tests With Dummy', () => {
 	})
 
 	it('should be possible to register one codex', async function() {
-		await expect(rarityExtendedEquipement.registerCodex(
-			dummyArmor.address,
+		await expect(rarityExtendedEquipements.registerCodex(
+			dummy.address,
 			ethers.constants.AddressZero,
-			dummyArmorCodex.address,
+			dummyCodex.address,
 			ethers.constants.AddressZero,
 			ethers.constants.AddressZero,
 			{from: user.address})
@@ -76,53 +76,55 @@ describe('Tests With Dummy', () => {
 	})
 
 	it('should be possible for this adventurer to craft armor 0', async function() {
-		await expect(dummyArmor.craft(adventurerPool[0], 2, 2, {from: user.address})).not.to.be.reverted;
+		await expect(dummy.craft(adventurerPool[0], 2, 2, {from: user.address})).not.to.be.reverted;
 	})
 	it('should be possible for this adventurer to craft armor 1', async function() {
-		await expect(dummyArmor.craft(adventurerPool[0], 2, 1, {from: user.address})).not.to.be.reverted;
+		await expect(dummy.craft(adventurerPool[0], 2, 1, {from: user.address})).not.to.be.reverted;
 	})
 	it('should be possible for this adventurer to craft armor 2', async function() {
-		await expect(dummyArmor.craft(adventurerPool[0], 2, 3, {from: user.address})).not.to.be.reverted;
+		await expect(dummy.craft(adventurerPool[0], 2, 3, {from: user.address})).not.to.be.reverted;
 	})
 	it('should be possible for the other adventurer to craft armor 3', async function() {
-		await expect(dummyArmor.craft(adventurerPool[1], 2, 3, {from: anotherUser.address})).not.to.be.reverted;
+		await expect(dummy.craft(adventurerPool[1], 2, 3, {from: anotherUser.address})).not.to.be.reverted;
 	})
 
 	it('the adventurer should be the owner of the armor ', async function() {
-		const armorOwner = await dummyArmor.ownerOf(0);
+		const armorOwner = await dummy.ownerOf(0);
 		await expect(armorOwner).to.be.equal(user.address);
 	})
 
 	it('the adventurer should be able to approve the spending of the armor by the contract', async function() {
-		await expect(dummyArmor.approve(
-			rarityExtendedEquipement.address,
+		await expect(dummy.approve(
+			rarityExtendedEquipements.address,
 			0,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
 
-	it('the adventurer should be able to set_armor ', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+	it('the adventurer should be able to set_equipement ', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			0,
+			2,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
-	it('the adventurer should not be able to set_armor (revert !already) ', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+	it('the adventurer should not be able to set_equipement (revert !already) ', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			1,
+			2,
 			{from: user.address})
 		).to.be.revertedWith('!already');
 	})
 	it('should be possible to get the details ot the adventurer armor', async function() {
-		const	adventurerArmor = await rarityExtendedEquipement.get_armor(adventurerPool[0])
+		const	adventurerArmor = await rarityExtendedEquipements.get_armor(adventurerPool[0])
 		await expect(Number(adventurerArmor[0])).to.be.equal(2);
 		await expect(Number(adventurerArmor[2])).to.be.equal(1);
 		await expect(Number(adventurerArmor[3])).to.be.equal(5);
@@ -133,34 +135,35 @@ describe('Tests With Dummy', () => {
 		await expect(adventurerArmor[8]).to.be.equal("Dead hero cape");
 		await expect(adventurerArmor[9]).to.be.equal("We honor his former owner, a hero with no name.");
 	})
-	it('the adventurer should be able to unset_armor', async function() {
-		await expect(rarityExtendedEquipement.unset_armor(adventurerPool[0], {from: user.address})
+	it('the adventurer should be able to unset_equipement', async function() {
+		await expect(rarityExtendedEquipements.unset_equipement(adventurerPool[0], 2, {from: user.address})
 		).not.to.be.reverted;
 	})
-	it('the adventurer should not be able to unset_armor', async function() {
-		await expect(rarityExtendedEquipement.unset_armor(adventurerPool[0], {from: user.address})
+	it('the adventurer should not be able to unset_equipement', async function() {
+		await expect(rarityExtendedEquipements.unset_equipement(adventurerPool[0], 2, {from: user.address})
 		).to.be.revertedWith('!noArmor');
 	})
 
 	it('the adventurer should be able to approve the spending of the armor by the contract', async function() {
-		await expect(dummyArmor.approve(
-			rarityExtendedEquipement.address,
+		await expect(dummy.approve(
+			rarityExtendedEquipements.address,
 			0,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
-	it('the adventurer should be able to set_armor with the same armor', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+	it('the adventurer should be able to set_equipement with the same armor', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			0,
+			2,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
 	it('should be possible to get the details ot the adventurer armor', async function() {
-		const	adventurerArmor = await rarityExtendedEquipement.get_armor(adventurerPool[0])
+		const	adventurerArmor = await rarityExtendedEquipements.get_armor(adventurerPool[0])
 		await expect(Number(adventurerArmor[0])).to.be.equal(2);
 		await expect(Number(adventurerArmor[2])).to.be.equal(1);
 		await expect(Number(adventurerArmor[3])).to.be.equal(5);
@@ -171,30 +174,31 @@ describe('Tests With Dummy', () => {
 		await expect(adventurerArmor[8]).to.be.equal("Dead hero cape");
 		await expect(adventurerArmor[9]).to.be.equal("We honor his former owner, a hero with no name.");
 	})
-	it('the adventurer should be able to unset_armor', async function() {
-		await expect(rarityExtendedEquipement.unset_armor(adventurerPool[0], {from: user.address})
+	it('the adventurer should be able to unset_equipement', async function() {
+		await expect(rarityExtendedEquipements.unset_equipement(adventurerPool[0], 2, {from: user.address})
 		).not.to.be.reverted;
 	})
 
 	it('the adventurer should be able to approve the spending of the armor by the contract', async function() {
-		await expect(dummyArmor.approve(
-			rarityExtendedEquipement.address,
+		await expect(dummy.approve(
+			rarityExtendedEquipements.address,
 			1,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
-	it('the adventurer should be able to set_armor with another armor', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+	it('the adventurer should be able to set_equipement with another armor', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			1,
+			2,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
 	it('should be possible to get the details ot the adventurer armor', async function() {
-		const	adventurerArmor = await rarityExtendedEquipement.get_armor(adventurerPool[0])
+		const	adventurerArmor = await rarityExtendedEquipements.get_armor(adventurerPool[0])
 		await expect(Number(adventurerArmor[0])).to.be.equal(1);
 		await expect(Number(adventurerArmor[2])).to.be.equal(1);
 		await expect(Number(adventurerArmor[3])).to.be.equal(10);
@@ -205,124 +209,134 @@ describe('Tests With Dummy', () => {
 		await expect(adventurerArmor[8]).to.be.equal("Haunted cloak");
 		await expect(adventurerArmor[9]).to.be.equal("It has a life of its own, it protects those who use it.");
 	})
-	it('the adventurer should be able to unset_armor', async function() {
-		await expect(rarityExtendedEquipement.unset_armor(adventurerPool[0], {from: user.address})
+	it('the adventurer should be able to unset_equipement', async function() {
+		await expect(rarityExtendedEquipements.unset_equipement(adventurerPool[0], 2, {from: user.address})
 		).not.to.be.reverted;
 	})
 
 
 	//Stuff with another player
 	it('should revert if another player try to set the armor for my adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!owner');
 	})
 	it('should revert if another player try to set the armor for my adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			anotherUser.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!owner');
 	})
 	it('should revert if another player try to set the my armor for another adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			user.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 	it('should revert if another player try to set the my armor for another adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			anotherUser.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 	it('the adventurer should be able to approve the spending of the armor by the contract', async function() {
-		await expect(dummyArmor.approve(
-			rarityExtendedEquipement.address,
+		await expect(dummy.approve(
+			rarityExtendedEquipements.address,
 			0,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
 	it('should revert if another player try to set the my armor for another adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			user.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 	it('should revert if another player try to set the my armor for another adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			anotherUser.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
-	it('should revert if set_armor if called by another player', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+	it('should revert if set_equipement if called by another player', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			1,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!owner');
 	})
-	it('should revert if set_armor if called by another player', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+	it('should revert if set_equipement if called by another player', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			anotherUser.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			1,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!owner');
 	})
 	it('should revert if anotherPlayer want to use the approved equipement from a non owner adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			user.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			1,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 	it('should revert if anotherPlayer want to use the approved equipement from a non owner adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			anotherUser.address,
-			dummyArmor.address,
-			dummyArmor.address,
+			dummy.address,
+			dummy.address,
 			1,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 });
 
 describe('Tests With Crafting', () => {
-	let		rarityExtendedEquipement;
+	let		rarityExtendedEquipements;
 	let		dummyRC;
 	let		dummyRCGoodsCodexAddr = '0x0C5C1CC0A7AE65FE372fbb08FF16578De4b980f3';
 	let		dummyRCArmorCodexAddr = '0xf5114A952Aca3e9055a52a87938efefc8BB7878C';
@@ -338,14 +352,14 @@ describe('Tests With Crafting', () => {
 			'function summon(uint _class) external',
 			'function setApprovalForAll(address operator, bool _approved) external',
 		], user);
-		rarityExtendedEquipement = await RarityExtendedEquipement.new()
+		rarityExtendedEquipements = await RarityExtendedEquipements.new()
 		dummyRC = await DummyRC.new();
 
     });
 
 	
 	it('should be possible to get the name of the contract', async function() {
-		const	name = await rarityExtendedEquipement.name();
+		const	name = await rarityExtendedEquipements.name();
 		await	expect(name).to.be.equal('Rarity Extended Equipement');
 	})
 
@@ -365,7 +379,7 @@ describe('Tests With Crafting', () => {
 	})
 
 	it('should be possible to register one codex', async function() {
-		await expect(rarityExtendedEquipement.registerCodex(
+		await expect(rarityExtendedEquipements.registerCodex(
 			dummyRC.address,
 			dummyRCGoodsCodexAddr,
 			dummyRCArmorCodexAddr,
@@ -393,34 +407,36 @@ describe('Tests With Crafting', () => {
 	})
 	it('the adventurer should be able to approve the spending of the armor by the contract', async function() {
 		await expect(dummyRC.approve(
-			rarityExtendedEquipement.address,
+			rarityExtendedEquipements.address,
 			0,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
 
-	it('the adventurer should be able to set_armor ', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+	it('the adventurer should be able to set_equipement ', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
 			dummyRC.address,
 			dummyRC.address,
 			0,
+			2,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
-	it('the adventurer should not be able to set_armor (revert !already) ', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+	it('the adventurer should not be able to set_equipement (revert !already) ', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
 			dummyRC.address,
 			dummyRC.address,
 			1,
+			2,
 			{from: user.address})
 		).to.be.revertedWith('!already');
 	})
 	it('should be possible to get the details ot the adventurer armor', async function() {
-		const	adventurerArmor = await rarityExtendedEquipement.get_armor(adventurerPool[0])
+		const	adventurerArmor = await rarityExtendedEquipements.get_armor(adventurerPool[0])
 		await expect(Number(adventurerArmor[0])).to.be.equal(11);
 		await expect(Number(adventurerArmor[2])).to.be.equal(3);
 		await expect(Number(adventurerArmor[3])).to.be.equal(50);
@@ -431,34 +447,35 @@ describe('Tests With Crafting', () => {
 		await expect(adventurerArmor[8]).to.be.equal("Half-plate");
 		await expect(adventurerArmor[9]).to.be.equal("The suit includes gauntlets.");
 	})
-	it('the adventurer should be able to unset_armor', async function() {
-		await expect(rarityExtendedEquipement.unset_armor(adventurerPool[0], {from: user.address})
+	it('the adventurer should be able to unset_equipement', async function() {
+		await expect(rarityExtendedEquipements.unset_equipement(adventurerPool[0], 2, {from: user.address})
 		).not.to.be.reverted;
 	})
-	it('the adventurer should not be able to unset_armor', async function() {
-		await expect(rarityExtendedEquipement.unset_armor(adventurerPool[0], {from: user.address})
+	it('the adventurer should not be able to unset_equipement', async function() {
+		await expect(rarityExtendedEquipements.unset_equipement(adventurerPool[0], 2, {from: user.address})
 		).to.be.revertedWith('!noArmor');
 	})
 
 	it('the adventurer should be able to approve the spending of the armor by the contract', async function() {
 		await expect(dummyRC.approve(
-			rarityExtendedEquipement.address,
+			rarityExtendedEquipements.address,
 			0,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
-	it('the adventurer should be able to set_armor with the same armor', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+	it('the adventurer should be able to set_equipement with the same armor', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
 			dummyRC.address,
 			dummyRC.address,
 			0,
+			2,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
 	it('should be possible to get the details ot the adventurer armor', async function() {
-		const	adventurerArmor = await rarityExtendedEquipement.get_armor(adventurerPool[0])
+		const	adventurerArmor = await rarityExtendedEquipements.get_armor(adventurerPool[0])
 		await expect(Number(adventurerArmor[0])).to.be.equal(11);
 		await expect(Number(adventurerArmor[2])).to.be.equal(3);
 		await expect(Number(adventurerArmor[3])).to.be.equal(50);
@@ -469,30 +486,31 @@ describe('Tests With Crafting', () => {
 		await expect(adventurerArmor[8]).to.be.equal("Half-plate");
 		await expect(adventurerArmor[9]).to.be.equal("The suit includes gauntlets.");
 	})
-	it('the adventurer should be able to unset_armor', async function() {
-		await expect(rarityExtendedEquipement.unset_armor(adventurerPool[0], {from: user.address})
+	it('the adventurer should be able to unset_equipement', async function() {
+		await expect(rarityExtendedEquipements.unset_equipement(adventurerPool[0], 2, {from: user.address})
 		).not.to.be.reverted;
 	})
 
 	it('the adventurer should be able to approve the spending of the armor by the contract', async function() {
 		await expect(dummyRC.approve(
-			rarityExtendedEquipement.address,
+			rarityExtendedEquipements.address,
 			1,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
-	it('the adventurer should be able to set_armor with another armor', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+	it('the adventurer should be able to set_equipement with another armor', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
 			dummyRC.address,
 			dummyRC.address,
 			1,
+			2,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
 	it('should be possible to get the details ot the adventurer armor', async function() {
-		const	adventurerArmor = await rarityExtendedEquipement.get_armor(adventurerPool[0])
+		const	adventurerArmor = await rarityExtendedEquipements.get_armor(adventurerPool[0])
 		await expect(Number(adventurerArmor[0])).to.be.equal(1);
 		await expect(Number(adventurerArmor[2])).to.be.equal(1);
 		await expect(Number(adventurerArmor[3])).to.be.equal(10);
@@ -503,124 +521,134 @@ describe('Tests With Crafting', () => {
 		await expect(adventurerArmor[8]).to.be.equal("Padded");
 		await expect(adventurerArmor[9]).to.be.equal("");
 	})
-	it('the adventurer should be able to unset_armor', async function() {
-		await expect(rarityExtendedEquipement.unset_armor(adventurerPool[0], {from: user.address})
+	it('the adventurer should be able to unset_equipement', async function() {
+		await expect(rarityExtendedEquipements.unset_equipement(adventurerPool[0], 2, {from: user.address})
 		).not.to.be.reverted;
 	})
 
 
 	//Stuff with another player
 	it('should revert if another player try to set the armor for my adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
 			dummyRC.address,
 			dummyRC.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!owner');
 	})
 	it('should revert if another player try to set the armor for my adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			anotherUser.address,
 			dummyRC.address,
 			dummyRC.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!owner');
 	})
 	it('should revert if another player try to set the my armor for another adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			user.address,
 			dummyRC.address,
 			dummyRC.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 	it('should revert if another player try to set the my armor for another adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			anotherUser.address,
 			dummyRC.address,
 			dummyRC.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 	it('the adventurer should be able to approve the spending of the armor by the contract', async function() {
 		await expect(dummyRC.approve(
-			rarityExtendedEquipement.address,
+			rarityExtendedEquipements.address,
 			0,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
 	it('should revert if another player try to set the my armor for another adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			user.address,
 			dummyRC.address,
 			dummyRC.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 	it('should revert if another player try to set the my armor for another adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			anotherUser.address,
 			dummyRC.address,
 			dummyRC.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
-	it('should revert if set_armor if called by another player', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+	it('should revert if set_equipement if called by another player', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
 			dummyRC.address,
 			dummyRC.address,
 			1,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!owner');
 	})
-	it('should revert if set_armor if called by another player', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+	it('should revert if set_equipement if called by another player', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			anotherUser.address,
 			dummyRC.address,
 			dummyRC.address,
 			1,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!owner');
 	})
 	it('should revert if anotherPlayer want to use the approved equipement from a non owner adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			user.address,
 			dummyRC.address,
 			dummyRC.address,
 			1,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 	it('should revert if anotherPlayer want to use the approved equipement from a non owner adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,address,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,address,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			anotherUser.address,
 			dummyRC.address,
 			dummyRC.address,
 			1,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 });
 
 describe('Tests With TheForest', () => {
-	let		rarityExtendedEquipement;
+	let		rarityExtendedEquipements;
     let		user;
 	let		adventurerPool = [];
 	let		equipementManager;
@@ -640,7 +668,7 @@ describe('Tests With TheForest', () => {
 			'function summon(uint _class) external',
 			'function setApprovalForAll(address operator, bool _approved) external',
 		], user);
-		rarityExtendedEquipement = await RarityExtendedEquipement.new()
+		rarityExtendedEquipements = await RarityExtendedEquipements.new()
 		dummyTheForest = await DummyTheForest.new(
 			"0xce761D788DF608BD21bdd59d6f4B54b2e27F25Bb",
 			"0xb37d3d79ea86B0334d9322c695339D577A3D57be",
@@ -653,12 +681,12 @@ describe('Tests With TheForest', () => {
 		dummyTheForestArmorCodex = await DummyTheForestArmorCodex.new();
 		dummyTheForestWeaponCodex = await DummyTheForestWeaponCodex.new();
 		dummyTheForestJewelryCodex = await DummyTheForestJewelryCodex.new();
-		equipementManager = await rarityExtendedEquipement.manager();
+		equipementManager = await rarityExtendedEquipements.manager();
     });
 
 	
 	it('should be possible to get the name of the contract', async function() {
-		const	name = await rarityExtendedEquipement.name();
+		const	name = await rarityExtendedEquipements.name();
 		await	expect(name).to.be.equal('Rarity Extended Equipement');
 	})
 
@@ -678,7 +706,7 @@ describe('Tests With TheForest', () => {
 	})
 
 	it('should be possible to register one codex', async function() {
-		await expect(rarityExtendedEquipement.registerCodex(
+		await expect(rarityExtendedEquipements.registerCodex(
 			dummyTheForestItemsProxy.address,
 			dummyTheForestGoodsCodex.address,
 			dummyTheForestArmorCodex.address,
@@ -708,16 +736,17 @@ describe('Tests With TheForest', () => {
 			0,
 			{from: user.address})
 		).not.to.be.reverted;
-		await (await RARITY.setApprovalForAll(rarityExtendedEquipement.address, true)).wait(); //specific for theForest
+		await (await RARITY.setApprovalForAll(rarityExtendedEquipements.address, true)).wait(); //specific for theForest
 	})
 
-	it('the adventurer should be able to set_armor ', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+	it('the adventurer should be able to set_equipement ', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			adventurerPool[0],
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			0,
+			2,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
@@ -729,18 +758,19 @@ describe('Tests With TheForest', () => {
 			{from: user.address})
 		).not.to.be.reverted;
 	})
-	it('the adventurer should not be able to set_armor (revert !already) ', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+	it('the adventurer should not be able to set_equipement (revert !already) ', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			adventurerPool[0],
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			1,
+			2,
 			{from: user.address})
 		).to.be.revertedWith('!already');
 	})
 	it('should be possible to get the details ot the adventurer armor', async function() {
-		const	adventurerArmor = await rarityExtendedEquipement.get_armor(adventurerPool[0])
+		const	adventurerArmor = await rarityExtendedEquipements.get_armor(adventurerPool[0])
 		await expect(Number(adventurerArmor[0])).to.be.equal(3);
 		await expect(Number(adventurerArmor[2])).to.be.equal(2);
 		await expect(Number(adventurerArmor[3])).to.be.equal(30);
@@ -751,12 +781,12 @@ describe('Tests With TheForest', () => {
 		await expect(adventurerArmor[8]).to.be.equal("Slain warrior armor");
 		await expect(adventurerArmor[9]).to.be.equal("I hope you find it useful.");
 	})
-	it('the adventurer should be able to unset_armor', async function() {
-		await expect(rarityExtendedEquipement.unset_armor(adventurerPool[0], {from: user.address})
+	it('the adventurer should be able to unset_equipement', async function() {
+		await expect(rarityExtendedEquipements.unset_equipement(adventurerPool[0], 2, {from: user.address})
 		).not.to.be.reverted;
 	})
-	it('the adventurer should not be able to unset_armor', async function() {
-		await expect(rarityExtendedEquipement.unset_armor(adventurerPool[0], {from: user.address})
+	it('the adventurer should not be able to unset_equipement', async function() {
+		await expect(rarityExtendedEquipements.unset_equipement(adventurerPool[0], 2, {from: user.address})
 		).to.be.revertedWith('!noArmor');
 	})
 
@@ -768,18 +798,19 @@ describe('Tests With TheForest', () => {
 			{from: user.address})
 		).not.to.be.reverted;
 	})
-	it('the adventurer should be able to set_armor with the same armor', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+	it('the adventurer should be able to set_equipement with the same armor', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			adventurerPool[0],
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			1,
+			2,
 			{from: user.address})
 		).not.to.be.reverted;
 	})
 	it('should be possible to get the details ot the adventurer armor', async function() {
-		const	adventurerArmor = await rarityExtendedEquipement.get_armor(adventurerPool[0])
+		const	adventurerArmor = await rarityExtendedEquipements.get_armor(adventurerPool[0])
 		await expect(Number(adventurerArmor[0])).to.be.equal(3);
 		await expect(Number(adventurerArmor[2])).to.be.equal(2);
 		await expect(Number(adventurerArmor[3])).to.be.equal(30);
@@ -790,50 +821,54 @@ describe('Tests With TheForest', () => {
 		await expect(adventurerArmor[8]).to.be.equal("Slain warrior armor");
 		await expect(adventurerArmor[9]).to.be.equal("I hope you find it useful.");
 	})
-	it('the adventurer should be able to unset_armor', async function() {
-		await expect(rarityExtendedEquipement.unset_armor(adventurerPool[0], {from: user.address})
+	it('the adventurer should be able to unset_equipement', async function() {
+		await expect(rarityExtendedEquipements.unset_equipement(adventurerPool[0], 2, {from: user.address})
 		).not.to.be.reverted;
 	})
 
 
 	//Stuff with another player
 	it('should revert if another player try to set the armor for my adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!owner');
 	})
 	it('should revert if another player try to set the armor for my adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			anotherUser.address,
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!owner');
 	})
 	it('should revert if another player try to set the my armor for another adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			user.address,
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 	it('should revert if another player try to set the my armor for another adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			anotherUser.address,
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
@@ -846,62 +881,68 @@ describe('Tests With TheForest', () => {
 		).not.to.be.reverted;
 	})
 	it('should revert if another player try to set the my armor for another adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			user.address,
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 	it('should revert if another player try to set the my armor for another adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			anotherUser.address,
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			0,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
-	it('should revert if set_armor if called by another player', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+	it('should revert if set_equipement if called by another player', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			user.address,
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			1,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!owner');
 	})
-	it('should revert if set_armor if called by another player', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+	it('should revert if set_equipement if called by another player', async function() {
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[0],
 			anotherUser.address,
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			1,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!owner');
 	})
 	it('should revert if anotherPlayer want to use the approved equipement from a non owner adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			user.address,
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			1,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
 	it('should revert if anotherPlayer want to use the approved equipement from a non owner adventurer', async function() {
-		await expect(rarityExtendedEquipement.methods['set_armor(uint256,uint256,address,address,uint256)'](
+		await expect(rarityExtendedEquipements.methods['set_equipement(uint256,uint256,address,address,uint256,uint8)'](
 			adventurerPool[1],
 			anotherUser.address,
 			dummyTheForestItemsProxy.address,
 			dummyTheForest.address,
 			1,
+			2,
 			{from: anotherUser.address})
 		).to.be.revertedWith('!equipement');
 	})
