@@ -159,7 +159,7 @@ contract rarity_extended_armor is rarity_extended_equipement_base {
     }
     
     function unset_armor(uint _adventurer) external {
-        require(_isApprovedOrOwner(_adventurer, msg.sender));
+        require(_isApprovedOrOwner(_adventurer, msg.sender), "!owner");
 
         Armor memory _armor = armor[_adventurer];
         require(_armor.token != address(0), "!noArmor");
@@ -209,8 +209,8 @@ contract rarity_extended_equipement is rarity_extended_armor, rarity_extended_pr
         address _weapon,
         address _jewelry
     ) public onlyExtended() {
-        require(_source != address(0));
-        require(codexes[_source][0] == address(0));
+        require(_source != address(0), "!_source");
+        require(codexes[_source][0] == address(0), "!already");
         codexes[_source][0] = _source;
         codexes[_source][1] = _item;
         codexes[_source][2] = _armor;
