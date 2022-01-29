@@ -14,15 +14,15 @@ import "./interfaces/IEquipementBase.sol";
 
 abstract contract rarity_extended_equipement_base is ERC721Holder, Extended, Rarity {
 	address public equipementWrapper;
-    uint public manager;
 	uint8 public equipementItemType;
 	uint8 public equipementSlot;
     
     event EquipementWrapperSet(address wrapper);
-    event RegistrySet(address registry, address codex);
+    event RegistrySet(address registry, address codex, address minter);
 	
-	//Registry -> codex, aka approved contract to use
-    mapping(address => address) public registries;
+	//Registry -> codex, aka approved contract to get informations
+    mapping(address => address) public codexes; //Registry -> codex, aka approved contract to get informations
+    mapping(address => address) public minters; //Registry -> minter, aka contract from which the ERC721 or rERC721 are minted
 
 	/*******************************************************************************
     **  @dev References aboute a specific equipement for an adventurer.
@@ -65,7 +65,16 @@ abstract contract rarity_extended_equipement_base is ERC721Holder, Extended, Rar
     **	@param _tokenID: TokenID of equipement
 	*******************************************************************************/
     function set_equipement(uint _adventurer, address _operator, address _registry, uint256 _tokenID) virtual public {
-        _before_set_equipement(_adventurer, _registry, _tokenID);
+        address codex = codexes[_registry];
+        require(codex != address(0), "!registered");
+
+        (uint8 base_type, uint8 item_type,,) = IEquipementSource(_registry).items(_tokenID);
+        require(_isApprovedOrOwner(_adventurer, msg.sender), "!owner");
+        require(_isApprovedOrOwnerOfItem(_tokenID, IERC721(_registry), msg.sender), "!equipement"); 
+		require(base_type == equipementItemType, "!base_type");
+        require(equipement[_adventurer].registry == address(0), "!already_equiped");
+
+        _handle_specific_situations(_adventurer, codex, item_type);
         equipement[_adventurer] = Equipement(_tokenID, _registry, false);
         IERC721(_registry).safeTransferFrom(_operator, address(this), _tokenID);
     }
@@ -76,26 +85,28 @@ abstract contract rarity_extended_equipement_base is ERC721Holder, Extended, Rar
 	**	equipement, or it must be an approve address.
     **  The ERC721 is transfered to this contract, aka locked. The player will have
 	**	to unset the armor before it can be transfered to another player.
-    **  @param _adventurer: TokenID of the adventurer we want to assign to
-    **	@param _operator: Address in which name we are acting for.
-    **	@param _registry: Address of the contract from which is generated the ERC721
-    **	@param _tokenID: TokenID of equipement
+    **  @param _adventurer: the tokenID of the adventurer we want to assign the armor to
+    **	@param _operator: adventurer in which name we are acting for.
+    **	@param _tokenSource: address of the base contract for this item, aka with which we will interact to transfer the item
+    **	@param _tokenID: the tokenID of the armor
 	*******************************************************************************/
-    function _before_set_equipement(
-		uint _adventurer,
-		address _registry,
-		uint256 _tokenID
-	) internal view {
-        address codex = registries[_registry];
+    function set_rEquipement(uint _adventurer, uint _operator, address _registry, uint256 _tokenID) virtual public {
+        address codex = codexes[_registry];
         require(codex != address(0), "!registered");
+
+        address minter = minters[_registry];
+        require(minter != address(0), "!minter");
 
         (uint8 base_type, uint8 item_type,,) = IEquipementSource(_registry).items(_tokenID);
         require(_isApprovedOrOwner(_adventurer, msg.sender), "!owner");
-        require(_isApprovedOrOwnerOfItem(_tokenID, IERC721(_registry), msg.sender), "!equipement"); 
+        require(_isApprovedOrOwnerOfItem(_tokenID, IrERC721(minter), _operator), "!equipement");
 		require(base_type == equipementItemType, "!base_type");
         require(equipement[_adventurer].registry == address(0), "!already_equiped");
 
         _handle_specific_situations(_adventurer, codex, item_type);
+
+        equipement[_adventurer] = Equipement(_tokenID, minter, true);
+        IrERC721(minter).transferFrom(_adventurer, RARITY_EXTENDED_NCP, _tokenID);
     }
 
 	/*******************************************************************************
@@ -111,8 +122,7 @@ abstract contract rarity_extended_equipement_base is ERC721Holder, Extended, Rar
     **  @param _codex: address of the Codex containing the read informations
     **	@param _item_type: type of item to check in the Codex
 	*******************************************************************************/
-	function _handle_specific_situations(uint _adventurer, address _codex, uint8 _item_type) virtual internal view {
-	}
+	function _handle_specific_situations(uint _adventurer, address _codex, uint8 _item_type) virtual internal view {}
 
 	/*******************************************************************************
     **  @dev Remove the equipement from the equiped slot and send back the NFT to
@@ -128,7 +138,7 @@ abstract contract rarity_extended_equipement_base is ERC721Holder, Extended, Rar
 
         if (equipementInfo.fromAdventurer) {
             IrERC721(equipementInfo.registry).transferFrom(
-                manager,
+                RARITY_EXTENDED_NCP,
                 _adventurer,
                 equipementInfo.tokenID
             );
@@ -143,7 +153,12 @@ abstract contract rarity_extended_equipement_base is ERC721Holder, Extended, Rar
 
 	function getEquipement(uint _adventurer) public view returns (uint, address, address, bool) {
 		Equipement memory _equipement = equipement[_adventurer];
-		return (_equipement.tokenID, _equipement.registry, registries[_equipement.registry], _equipement.fromAdventurer);
+		return (
+			_equipement.tokenID,
+			_equipement.registry,
+			codexes[_equipement.registry],
+			_equipement.fromAdventurer
+		);
 	}
 
 	function name() virtual public pure returns (string memory) {
@@ -151,16 +166,19 @@ abstract contract rarity_extended_equipement_base is ERC721Holder, Extended, Rar
 	}
 
 	// ADMIN FUNCTIONS
-	function addRegistry(address _registry, address _codex) public onlyExtended() {
-		require(registries[_registry] == address(0), "!assigned");
-		registries[_registry] = _codex;
-		emit RegistrySet(_registry, _codex);
+	function addRegistry(address _registry, address _minter, address _codex) public onlyExtended() {
+		require(codexes[_registry] == address(0), "!assigned");
+		codexes[_registry] = _codex;
+		minters[_registry] = _minter;
+
+		emit RegistrySet(_registry, _codex, _minter);
 	}
 
 	function removeRegistry(address _registry) public onlyExtended() {
-		require(registries[_registry] != address(0), "!assigned");
-		registries[_registry] = address(0);
-		emit RegistrySet(_registry, address(0));
+		require(codexes[_registry] != address(0), "!assigned");
+		codexes[_registry] = address(0);
+		codexes[_registry] = address(0);
+		emit RegistrySet(_registry, address(0), address(0));
 	}
 
 	function setEquipementWrapper(address _wrapper) public onlyExtended() {
