@@ -11,27 +11,39 @@ contract rarity_extended_equipement_base is ERC721Holder {
     address public EXTENDED = address(0x0f5861aaf5F010202919C9126149c6B0c76Cf469);
     string constant public name = "Rarity Extended Equipement";
     uint public manager;
-    mapping(address => address[5]) public codexes; // address => [item_codex, armor_codex, weapon_codex, jewelry_codex]
 
     modifier onlyExtended() {
 		require (msg.sender == EXTENDED, "!owner");
 		_;
 	}
     
+    struct Registry { //key is ERC721 address
+        address codex; //Details about the items are in another contract
+        uint8 slot; //Corresponding slot for this codex
+    }
+    mapping(address => Registry) public registries;
+
+    /**
+    **  @dev References aboute a specific equipement for an adventurer.
+    **  We have 9 mappings containing the data to retrieve the NFT. 
+    **	@param __key__: TokenID of the adventurer
+    **	@param tokenID: ID of the NFT
+    **	@param registry: address of the NFT
+    **	@param fromAdventurer: Is the owner an adventurer or a wallet
+    **/
     struct Equipement {
         uint tokenID;
-        address codex;
-        address token;
+        address registry;
         bool fromAdventurer;
     }
-    mapping(uint => Equipement) public actionable_item;
-    mapping(uint => Equipement) public armor;
+    mapping(uint => Equipement) public head;
+    mapping(uint => Equipement) public body;
+    mapping(uint => Equipement) public hand;
+    mapping(uint => Equipement) public foot;
     mapping(uint => Equipement) public primary_weapon;
     mapping(uint => Equipement) public secondary_weapon;
-    mapping(uint => Equipement) public neck_jewelry;
-    mapping(uint => Equipement) public belt_jewelry;
-    mapping(uint => Equipement) public left_hand_jewelry;
-    mapping(uint => Equipement) public right_hand_jewelry;
+    mapping(uint => Equipement) public first_jewelry;
+    mapping(uint => Equipement) public second_jewelry;
     mapping(uint => Equipement) public shield;
 
 

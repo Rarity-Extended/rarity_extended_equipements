@@ -7,30 +7,20 @@ import "./interfaces/IRarityCodexArmor.sol";
 import "./interfaces/IRarityCodexWeapon.sol";
 import "./rarity_extended_equipement.sol";
 
-contract rarity_extended_equipements is rarity_extended_equipement {
+contract rarity_extended_equipements_registry is rarity_extended_equipement {
     constructor() {
         EXTENDED = address(msg.sender);
         manager = _rm.next_summoner();
         _rm.summon(4);
     }
 
-    function    registerCodex(
-        address _source,
-        address _item,
-        address _armor,
-        address _weapon,
-        address _jewelry
-    ) public onlyExtended() {
-        require(_source != address(0), "!_source");
-        require(codexes[_source][0] == address(0), "!already");
-        codexes[_source][0] = _source;
-        codexes[_source][1] = _item;
-        codexes[_source][2] = _armor;
-        codexes[_source][3] = _weapon;
-        codexes[_source][4] = _jewelry;
+    function    registerCodex(address _source, address _codex, uint8 _slot) public onlyExtended() {
+        require(_source != address(0) && registries[_source].slot != 0, "!_source");
+        require(_codex != address(0), "!codex");
+        registries[_source] = registries(_codex, _slot);
     }
 
-    function get_slots(uint8 _slot) public pure returns (string memory) {
+    function    get_slots(uint8 _slot) public pure returns (string memory) {
         if (_slot == 1) {
             return "Head";
         } else if (_slot == 2) {
@@ -54,7 +44,7 @@ contract rarity_extended_equipements is rarity_extended_equipement {
     }
 
     /* GETTERS */
-    function get_armor(uint _adventurer) external view returns(
+    function    get_armor(uint _adventurer) external view returns(
         uint,
         uint,
         uint,

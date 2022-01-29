@@ -11,68 +11,57 @@ import "./interfaces/IRarityCodexWeapon.sol";
 contract rarity_extended_equipement is rarity_extended_equipement_base {
     function _assign_equipement(uint8 _slot, uint _adventurer, Equipement memory _equipement) internal {
          if (_slot == 1) {
-            actionable_item[_adventurer] = _equipement;
+            head[_adventurer] = _equipement;
         } else if (_slot == 2) {
-            armor[_adventurer] = _equipement;
+            body[_adventurer] = _equipement;
         } else if (_slot == 3) {
-            primary_weapon[_adventurer] = _equipement;
+            hand[_adventurer] = _equipement;
         } else if (_slot == 4) {
-            secondary_weapon[_adventurer] = _equipement;
+            foot[_adventurer] = _equipement;
         } else if (_slot == 5) {
-            neck_jewelry[_adventurer] = _equipement;
+            primary_weapon[_adventurer] = _equipement;
         } else if (_slot == 6) {
-            belt_jewelry[_adventurer] = _equipement;
+            secondary_weapon[_adventurer] = _equipement;
         } else if (_slot == 7) {
-            left_hand_jewelry[_adventurer] = _equipement;
+            first_jewelry[_adventurer] = _equipement;
         } else if (_slot == 8) {
-            right_hand_jewelry[_adventurer] = _equipement;
+            second_jewelry[_adventurer] = _equipement;
         } else if (_slot == 9) {
             shield[_adventurer] = _equipement;
         }
     }
     function _get_slot(uint _slot, uint _adventurer) internal view returns (Equipement memory) {
-        if (_slot == 1) {
-            return actionable_item[_adventurer];
+         if (_slot == 1) {
+            return head[_adventurer];
         } else if (_slot == 2) {
-            return armor[_adventurer];
+            return body[_adventurer];
         } else if (_slot == 3) {
-            return primary_weapon[_adventurer];
+            return hand[_adventurer];
         } else if (_slot == 4) {
-            return secondary_weapon[_adventurer];
+            return foot[_adventurer];
         } else if (_slot == 5) {
-            return neck_jewelry[_adventurer];
+            return primary_weapon[_adventurer];
         } else if (_slot == 6) {
-            return belt_jewelry[_adventurer];
+            return secondary_weapon[_adventurer];
         } else if (_slot == 7) {
-            return left_hand_jewelry[_adventurer];
+            return first_jewelry[_adventurer];
         } else if (_slot == 8) {
-            return right_hand_jewelry[_adventurer];
+            return second_jewelry[_adventurer];
         } else if (_slot == 9) {
             return shield[_adventurer];
         }
-        return Equipement(0, address(0), address(0), false);
+        return Equipement(0, address(0), false);
     }
-    function _get_base_type(uint _slot) internal pure returns (uint8) {
-        if (_slot == 1) {
-            return 1;
-        } else if (_slot == 2) {
-            return 2;
-        } else if (_slot == 3) {
-            return 3;
-        } else if (_slot == 4) {
-            return 3;
-        } else if (_slot == 5) {
-            return 4;
-        } else if (_slot == 6) {
-            return 4;
-        } else if (_slot == 7) {
-            return 4;
-        } else if (_slot == 8) {
-            return 4;
-        } else if (_slot == 9) {
-            return 2;
-        }
-        return 0;
+    function _isValidBaseType(uint _baseType, uint _slot) internal pure returns (bool) {
+        if (_baseType <= 1)
+            return false;
+        if (_baseType == 2 && (_slot > 4 || _slot != 9))
+            return false;
+        if (_baseType == 3 && (_slot != 5 || _slot != 6))
+            return false;
+        if (_baseType == 4 && (_slot != 7 || _slot != 8))
+            return false;
+        return true;
     }
     function _handle_specific_situations(
         uint _adventurer,
@@ -81,49 +70,43 @@ contract rarity_extended_equipement is rarity_extended_equipement_base {
         uint8 _base_type,
         uint8 _item_type
     ) internal view {
-        if (_slot == 1) {
-        } else if (_slot == 2) {
-            //Preventing a shield to be used as armor
-            if (_base_type == 2) {
-                address armorCodex = codexes[_codex][2];
-                (,,uint proficiency,,,,,,,) = IRarityCodexArmor(armorCodex).item_by_id(_item_type);
-                require(proficiency != 4, "shield");
-            }
-        } else if (_slot == 3) {
-        } else if (_slot == 4) {
-            //Preventing a secondary weapon if a shield is equipped
-            require(_get_slot(9, _adventurer).token == address(0), "!already_shield");
-
-            //Preventing a secondary if a primary two handed / ranged weapon is equiped
-            if (_get_slot(3, _adventurer).token != address(0)) {
-                Equipement memory _primary_weapon = primary_weapon[_adventurer];
-                (,uint8 item_type,,) = IRarityItemSource(_primary_weapon.codex).items(_primary_weapon.tokenID);
-                IRarityCodexWeapon.IWeapon memory _weapon = IRarityCodexWeapon(codexes[_primary_weapon.codex][3]).item_by_id(item_type);
-                require(_weapon.encumbrance < 4, "!encumbrance");
-            }
-        } else if (_slot == 5) {
-        } else if (_slot == 6) {
-        } else if (_slot == 7) {
-        } else if (_slot == 8) {
-        } else if (_slot == 9) {
-            //Preventing an armor to be used as shield
-            if (_base_type == 2) {
-                address armorCodex = codexes[_codex][2];
-                (,,uint proficiency,,,,,,,) = IRarityCodexArmor(armorCodex).item_by_id(_item_type);
-                require(proficiency == 4, "!shield");
-            }
-
-            //Preventing a shield if a secondary weapon is equipped
-            require(_get_slot(4, _adventurer).token == address(0), "!already_weapon");
-
-            //Preventing a shield if a primary two handed / ranged weapon is equiped
-            if (_get_slot(3, _adventurer).token != address(0)) {
-                Equipement memory _primary_weapon = primary_weapon[_adventurer];
-                (,uint8 item_type,,) = IRarityItemSource(_primary_weapon.codex).items(_primary_weapon.tokenID);
-                IRarityCodexWeapon.IWeapon memory _weapon = IRarityCodexWeapon(codexes[_primary_weapon.codex][3]).item_by_id(item_type);
-                require(_weapon.encumbrance < 4, "!encumbrance");
-            }
+        //If item is armor and not trying to equip shield
+        if (_base_type == 2 && _slot != 9) {
+            (,,uint proficiency,,,,,,,) = IRarityCodexArmor(_codex).item_by_id(_item_type);
+            require(proficiency != 4, "shield"); //Then item should not be a shield
         }
+
+
+        //If item is armor and trying to equip shield
+       else if (_base_type == 2 && _slot == 9) {
+            (,,uint proficiency,,,,,,,) = IRarityCodexArmor(_codex).item_by_id(_item_type);
+            require(proficiency == 4, "!shield"); //Then item should be a shield
+
+            //If a weapon is already equiped in slot 6 (secondary_weapon), revert
+            require(secondary_weapon[_adventurer].registry == address(0), "!already_weapon");
+
+            //Require primary weapon is not two handed or ranged
+            Equipement memory _primary_weapon = primary_weapon[_adventurer];
+            address codex = registries[_primary_weapon.registry].codex;
+            (,uint8 item_type,,) = IRarityItemSource(_primary_weapon.registry).items(_primary_weapon.tokenID);
+            IRarityCodexWeapon.IWeapon memory _weapon = IRarityCodexWeapon(codex).item_by_id(item_type);
+            require(_weapon.encumbrance < 4, "!encumbrance");
+        }
+
+        
+        //If item is secondary weapon, should fail if shield or two handed/ranged primary
+        else if (_base_type == 3 && _slot == 6) {
+            //If a shield is already equiped in slot 9 (shields), revert
+            require(shield[_adventurer].registry == address(0), "!already_shield");
+
+            //Require primary weapon is not two handed or ranged
+            Equipement memory _primary_weapon = primary_weapon[_adventurer];
+            address codex = registries[_primary_weapon.registry].codex;
+            (,uint8 item_type,,) = IRarityItemSource(_primary_weapon.registry).items(_primary_weapon.tokenID);
+            IRarityCodexWeapon.IWeapon memory _weapon = IRarityCodexWeapon(codex).item_by_id(item_type);
+            require(_weapon.encumbrance < 4, "!encumbrance");
+        }
+
     }
 
     /**
@@ -142,28 +125,23 @@ contract rarity_extended_equipement is rarity_extended_equipement_base {
     **
     **  @param _adventurer: the tokenID of the adventurer we want to assign the armor to
     **	@param _operator: address in which name we are acting for. This is msg.sender if the player directly call this contract
-    **	@param _codex: address of the contract that hold the items mapping
-    **	@param _tokenSource: address of the base contract for this item, aka with which we will interact to transfer the item
-    **	@param _tokenID: the tokenID of the armor
+    **	@param _registry: address of the contract from which is generated the ERC721
+    **	@param _tokenID: the tokenID of equipement
     **/ 
-    function set_equipement(
-        uint _adventurer,
-        address _operator,
-        address _codex,
-        address _tokenSource,
-        uint256 _tokenID,
-        uint8 _slot
-    ) public {
+    function set_equipement(uint _adventurer, address _operator, address _registry, uint256 _tokenID) public {
         require(_isApprovedOrOwner(_adventurer, msg.sender), "!owner");
-        require(_isApprovedOrOwnerOfItem(_tokenID, IERC721(_tokenSource), msg.sender), "!equipement"); 
+        require(_isApprovedOrOwnerOfItem(_tokenID, IERC721(_registry), msg.sender), "!equipement"); 
 
-        (uint8 base_type, uint8 item_type,,) = IRarityItemSource(_codex).items(_tokenID);
-        require(base_type == _get_base_type(_slot), "!base_type");
-        _handle_specific_situations(_adventurer, _codex, _slot, base_type, item_type);
-        require(_get_slot(_slot, _adventurer).token == address(0), "!already");
+        Registry memory registry = registries[_registry];
+        require(registry.slot > 0, "!registry");
 
-        _assign_equipement(_slot, _adventurer, Equipement(_tokenID, _codex, _tokenSource, false));
-        IERC721(_tokenSource).safeTransferFrom(_operator, address(this), _tokenID);
+        (uint8 base_type, uint8 item_type,,) = IRarityItemSource(registry.codex).items(_tokenID);
+        require(_isValidBaseType(base_type, registry.slot), "!base_type");
+        _handle_specific_situations(_adventurer, registry.codex, registry.slot, base_type, item_type);
+        require(_get_slot(registry.slot, _adventurer).registry == address(0), "!already");
+
+        _assign_equipement(registry.slot, _adventurer, Equipement(_tokenID, _registry, false));
+        IERC721(_registry).safeTransferFrom(_operator, address(this), _tokenID);
     }
 
     /**
@@ -186,41 +164,37 @@ contract rarity_extended_equipement is rarity_extended_equipement_base {
     **	@param _tokenSource: address of the base contract for this item, aka with which we will interact to transfer the item
     **	@param _tokenID: the tokenID of the armor
     **/ 
-    function set_equipement(
-        uint _adventurer, 
-        uint _operator, 
-        address _codex, 
-        address _token, 
-        uint256 _tokenID,
-        uint8 _slot
-    ) public {
+    function set_equipement(uint _adventurer, uint _operator, address _registry, uint256 _tokenID) public {
         require(_isApprovedOrOwner(_adventurer, msg.sender), "!owner");
-        require(_isApprovedOrOwnerOfItem(_tokenID, IERC721Adventurer(_token), _operator), "!equipement"); 
+        require(_isApprovedOrOwnerOfItem(_tokenID, IERC721Adventurer(_registry), _operator), "!equipement"); 
         
-        (uint8 base_type, uint8 item_type,,) = IRarityItemSource(_codex).items(_tokenID);
-        require(base_type == _get_base_type(_slot), "!base_type");
-        _handle_specific_situations(_adventurer, _codex, _slot, base_type, item_type);
-        require(_get_slot(_slot, _adventurer).token == address(0), "!already");
+        Registry memory registry = registries[_registry];
+        require(registry.slot > 0, "!registry");
 
-        _assign_equipement(_slot, _adventurer, Equipement(_tokenID, _codex, _token, true));
-        IERC721Adventurer(_token).transferFrom(_adventurer, manager, _tokenID);
+        (uint8 base_type, uint8 item_type,,) = IRarityItemSource(registry.codex).items(_tokenID);
+        require(_isValidBaseType(base_type, registry.slot), "!base_type");
+        _handle_specific_situations(_adventurer, registry.codex, registry.slot, base_type, item_type);
+        require(_get_slot(registry.slot, _adventurer).registry == address(0), "!already");
+
+        _assign_equipement(registry.slot, _adventurer, Equipement(_tokenID, _registry, true));
+        IERC721Adventurer(_registry).transferFrom(_adventurer, manager, _tokenID);
     }
     
     function unset_equipement(uint _adventurer, uint8 _slot) public {
         require(_isApprovedOrOwner(_adventurer, msg.sender), "!owner");
 
         Equipement memory _equipement = _get_slot(_slot, _adventurer);
-        require(_equipement.token != address(0), "!noArmor");
+        require(_equipement.registry != address(0), "!noArmor");
 
-        _assign_equipement(_slot, _adventurer, Equipement(0, address(0), address(0), false));
+        _assign_equipement(_slot, _adventurer, Equipement(0, address(0), false));
         if (_equipement.fromAdventurer) {
-            IERC721Adventurer(_equipement.token).transferFrom(
+            IERC721Adventurer(_equipement.registry).transferFrom(
                 manager,
                 _adventurer,
                 _equipement.tokenID
             );
         } else {
-            IERC721(_equipement.token).safeTransferFrom(
+            IERC721(_equipement.registry).safeTransferFrom(
                 address(this),
                 _rm.ownerOf(_adventurer),
                 _equipement.tokenID
