@@ -2,79 +2,170 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import "./extended.sol";
+import "./rarity.sol";
 import "./interfaces/IRarity.sol";
 import "./interfaces/IERC721.sol";
-import "./interfaces/IERC721Adventurer.sol";
+import "./interfaces/IEquipementCodexType2.sol";
+import "./interfaces/IEquipementCodexType3.sol";
+import "./interfaces/IEquipementSource.sol";
+import "./interfaces/IEquipementWrapper.sol";
+import "./interfaces/IEquipementBase.sol";
 
-contract rarity_extended_equipement_base is ERC721Holder {
-    IRarity constant _rm = IRarity(0xce761D788DF608BD21bdd59d6f4B54b2e27F25Bb);
-    address public EXTENDED = address(0x0f5861aaf5F010202919C9126149c6B0c76Cf469);
-    string constant public name = "Rarity Extended Equipement";
+abstract contract rarity_extended_equipement_base is ERC721Holder, Extended, Rarity {
+	address public equipementWrapper;
     uint public manager;
-
-    modifier onlyExtended() {
-		require (msg.sender == EXTENDED, "!owner");
-		_;
-	}
+	uint8 public equipementItemType;
+	uint8 public equipementSlot;
     
-    struct Registry { //key is ERC721 address
-        address codex; //Details about the items are in another contract
-        uint8 slot; //Corresponding slot for this codex
-    }
-    mapping(address => Registry) public registries;
+    event EquipementWrapperSet(address wrapper);
+    event RegistrySet(address registry, address codex);
+	
+	//Registry -> codex, aka approved contract to use
+    mapping(address => address) public registries;
 
-    /**
+	/*******************************************************************************
     **  @dev References aboute a specific equipement for an adventurer.
-    **  We have 9 mappings containing the data to retrieve the NFT. 
     **	@param __key__: TokenID of the adventurer
     **	@param tokenID: ID of the NFT
     **	@param registry: address of the NFT
     **	@param fromAdventurer: Is the owner an adventurer or a wallet
-    **/
+	*******************************************************************************/
     struct Equipement {
         uint tokenID;
         address registry;
         bool fromAdventurer;
     }
-    mapping(uint => Equipement) public head;
-    mapping(uint => Equipement) public body;
-    mapping(uint => Equipement) public hand;
-    mapping(uint => Equipement) public foot;
-    mapping(uint => Equipement) public primary_weapon;
-    mapping(uint => Equipement) public secondary_weapon;
-    mapping(uint => Equipement) public first_jewelry;
-    mapping(uint => Equipement) public second_jewelry;
-    mapping(uint => Equipement) public shield;
+    mapping(uint => Equipement) public equipement;
 
+	/*******************************************************************************
+    **  @dev Register the abstract contract.
+    **	@param _equipementItemType: Can be one of theses:
+	**	- 1 for Goods
+	**	- 2 for Armor
+	**	- 3 for Weapons
+	**	- 4 for Jewelries
+    **	@param _slot: Slot to use
+	*******************************************************************************/
+	constructor(uint8 _equipementItemType, uint8 _slot, address _wrapper) Extended() Rarity(true) {
+		equipementItemType = _equipementItemType;
+		equipementSlot = _slot;
+		equipementWrapper = _wrapper;
+	}
 
-    /**
-    **  @dev Check if the _owner has the autorization to act on this adventurer
-    **	@param _adventurer: TokenID of the adventurer we want to check
-    **	@param _operator: the operator to check
-    **/
-    function _isApprovedOrOwner(uint _adventurer, address _operator) internal view returns (bool) {
-        return (_rm.getApproved(_adventurer) == _operator || _rm.ownerOf(_adventurer) == _operator || _rm.isApprovedForAll(_rm.ownerOf(_adventurer), _operator));
+	/*******************************************************************************
+    **  @dev Assign an equipement to an adventurer. If the adventurer already has
+	**	one, it will revert. The owner of the adventurer must be the owner of the
+	**	equipement, or it must be an approve address.
+    **  The ERC721 is transfered to this contract, aka locked. The player will have
+	**	to unset the armor before it can be transfered to another player.
+    **  @param _adventurer: TokenID of the adventurer we want to assign to
+    **	@param _operator: Address in which name we are acting for.
+    **	@param _registry: Address of the contract from which is generated the ERC721
+    **	@param _tokenID: TokenID of equipement
+	*******************************************************************************/
+    function set_equipement(uint _adventurer, address _operator, address _registry, uint256 _tokenID) virtual public {
+        _before_set_equipement(_adventurer, _registry, _tokenID);
+        equipement[_adventurer] = Equipement(_tokenID, _registry, false);
+        IERC721(_registry).safeTransferFrom(_operator, address(this), _tokenID);
     }
 
-    /**
-    **  @dev Check if the _owner has the autorization to act on this tokenID
-    **	@param _tokenID: TokenID of the item we want to check
-    **	@param _source: address of contract for tokenID 
-    **/
-    function _isApprovedOrOwnerOfItem(uint _tokenID, IERC721 _source, address _operator) internal view returns (bool) {
-        return (
-            _source.ownerOf(_tokenID) == _operator ||
-            _source.getApproved(_tokenID) == _operator ||
-            _source.isApprovedForAll(_source.ownerOf(_tokenID), _operator)
-        );
+	/*******************************************************************************
+    **  @dev Assign an equipement to an adventurer. If the adventurer already has
+	**	one, it will revert. The owner of the adventurer must be the owner of the
+	**	equipement, or it must be an approve address.
+    **  The ERC721 is transfered to this contract, aka locked. The player will have
+	**	to unset the armor before it can be transfered to another player.
+    **  @param _adventurer: TokenID of the adventurer we want to assign to
+    **	@param _operator: Address in which name we are acting for.
+    **	@param _registry: Address of the contract from which is generated the ERC721
+    **	@param _tokenID: TokenID of equipement
+	*******************************************************************************/
+    function _before_set_equipement(
+		uint _adventurer,
+		address _registry,
+		uint256 _tokenID
+	) internal view {
+        address codex = registries[_registry];
+        require(codex != address(0), "!registered");
+
+        (uint8 base_type, uint8 item_type,,) = IEquipementSource(_registry).items(_tokenID);
+        require(_isApprovedOrOwner(_adventurer, msg.sender), "!owner");
+        require(_isApprovedOrOwnerOfItem(_tokenID, IERC721(_registry), msg.sender), "!equipement"); 
+		require(base_type == equipementItemType, "!base_type");
+        require(equipement[_adventurer].registry == address(0), "!already_equiped");
+
+        _handle_specific_situations(_adventurer, codex, item_type);
     }
 
-    function _isApprovedOrOwnerOfItem(uint256 _tokenID, IERC721Adventurer _source, uint _operator) internal view returns (bool) {
-        return (
-            _source.ownerOf(_tokenID) == _operator ||
-            _source.getApproved(_tokenID) == _operator ||
-            _source.isApprovedForAll(_tokenID, _operator)
-        );
+	/*******************************************************************************
+    **  @dev Some equipements may require some specific verifications. Example are
+    **  you cannot equip a shield if you already have two weapons, or a ranged
+    **  weapon. You cannot equip a shield as an armor, or an armor as a shield. You
+    **  cannot equipe a secondary weapon if you have a two handed weapon or a ranged
+    **  weapon.
+    **  This function MUST be modified to check the requirement for the specific
+    **  slot of this contract.
+    **  @notice : List of checks
+    **  @param _adventurer: tokenID of the adventurer to work with
+    **  @param _codex: address of the Codex containing the read informations
+    **	@param _item_type: type of item to check in the Codex
+	*******************************************************************************/
+	function _handle_specific_situations(uint _adventurer, address _codex, uint8 _item_type) virtual internal view {
+	}
+
+	/*******************************************************************************
+    **  @dev Remove the equipement from the equiped slot and send back the NFT to
+	**	the owner. The owner can be an address or an uint.
+    **  @param _adventurer: tokenID of the adventurer to work with
+	*******************************************************************************/
+    function unset_equipement(uint _adventurer) public {
+        require(_isApprovedOrOwner(_adventurer, msg.sender), "!owner");
+		
+		Equipement memory equipementInfo = equipement[_adventurer];
+        require(equipementInfo.registry != address(0), "!noArmor");
+        equipement[_adventurer] = Equipement(0, address(0), false);
+
+        if (equipementInfo.fromAdventurer) {
+            IrERC721(equipementInfo.registry).transferFrom(
+                manager,
+                _adventurer,
+                equipementInfo.tokenID
+            );
+        } else {
+            IERC721(equipementInfo.registry).safeTransferFrom(
+                address(this),
+                _rm.ownerOf(_adventurer),
+                equipementInfo.tokenID
+            );
+        }
     }
+
+	function getEquipement(uint _adventurer) public view returns (uint, address, address, bool) {
+		Equipement memory _equipement = equipement[_adventurer];
+		return (_equipement.tokenID, _equipement.registry, registries[_equipement.registry], _equipement.fromAdventurer);
+	}
+
+	function name() virtual public pure returns (string memory) {
+		return ("Rarity Extended Equipement");
+	}
+
+	// ADMIN FUNCTIONS
+	function addRegistry(address _registry, address _codex) public onlyExtended() {
+		require(registries[_registry] == address(0), "!assigned");
+		registries[_registry] = _codex;
+		emit RegistrySet(_registry, _codex);
+	}
+
+	function removeRegistry(address _registry) public onlyExtended() {
+		require(registries[_registry] != address(0), "!assigned");
+		registries[_registry] = address(0);
+		emit RegistrySet(_registry, address(0));
+	}
+
+	function setEquipementWrapper(address _wrapper) public onlyExtended() {
+		equipementWrapper = _wrapper;
+		emit EquipementWrapperSet(_wrapper);
+	}
 
 }

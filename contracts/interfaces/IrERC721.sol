@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.10;
 
-interface IERC721Adventurer {
+interface IrERC721 {
     function ownerOf(uint256 tokenId) external view returns (uint);
     function getApproved(uint256 tokenId) external view returns (uint);
     function isApprovedForAll(uint owner, uint operator) external view returns (bool);

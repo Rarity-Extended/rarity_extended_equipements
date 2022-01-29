@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.10;
 
-interface IRarityCodexWeapon {
-    struct IWeapon {
+interface IEquipementCodexType3 {
+    struct Item {
         uint id;
         uint cost;
         uint proficiency;
@@ -16,6 +16,5 @@ interface IRarityCodexWeapon {
         string name;
         string description;
     }
-
-    function item_by_id(uint _id) external pure returns(IWeapon memory _weapon);
+    function item_by_id(uint _id) external pure returns(Item memory _weapon);
 }

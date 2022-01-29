@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.10;
 
-interface IRarityCodexArmor {
+interface IEquipementCodexType2 {
     function item_by_id(uint _id) external pure returns(
         uint id,
         uint cost,
