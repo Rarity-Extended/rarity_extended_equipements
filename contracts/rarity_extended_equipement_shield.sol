@@ -35,13 +35,12 @@ contract rarity_extended_equipement_shield is rarity_extended_equipement_base {
         require(proficiency == 4, '!shield');
     
         // Check that no secondary weapon is equiped
-        (,address registrySecWeapon,,) = IEquipementWrapper(equipementWrapper).getEquipementBySlot(_adventurer, 6);
+        (,address registrySecWeapon,,,,) = IEquipementWrapper(equipementWrapper).getEquipementBySlot(_adventurer, 6);
         require(registrySecWeapon == address(0), '!secondary_weapon');
 
         // Check that no primary twohanded/ranger weapon is equiped
-        (uint256 tokenIDPrimWeapon, address registryPrimWeapon, address codexPrimWeapon,) = IEquipementWrapper(equipementWrapper).getEquipementBySlot(_adventurer, 5);
+        (, address registryPrimWeapon, address codexPrimWeapon,, uint8 item_type,) = IEquipementWrapper(equipementWrapper).getEquipementBySlot(_adventurer, 5);
         if (registryPrimWeapon != address(0)) {
-            (,uint8 item_type,,) = IEquipementSource(registryPrimWeapon).items(tokenIDPrimWeapon);
             IEquipementCodexType3.Item memory _weapon = IEquipementCodexType3(codexPrimWeapon).item_by_id(item_type);
             require(_weapon.encumbrance < 4, "!primary_encumbrance");
         }

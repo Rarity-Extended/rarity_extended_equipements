@@ -43,8 +43,15 @@ contract rarity_extended_equipement_wrapper is Extended {
     **	@param _adventurer: tokenID of the adventurer we want to get the equipement
     **  @param _slot: ID of the slot we want to assign to
     *******************************************************************************/
-    function getEquipementBySlot(uint _adventurer, uint _slot) public view returns (uint tokenID, address registry, address codex, bool fromAdventurer) {
-        (tokenID, registry, codex, fromAdventurer) = IEquipementBase(slots[_slot]).getEquipement(_adventurer);
+    function getEquipementBySlot(uint _adventurer, uint _slot) public view returns (
+        uint tokenID,
+        address registry,
+        address codex,
+        uint8 base_type,
+        uint8 item_type,
+        bool fromAdventurer
+    ) {
+        (tokenID, registry, codex, base_type, item_type, fromAdventurer) = IEquipementBase(slots[_slot]).getEquipement(_adventurer);
     }
 
 }

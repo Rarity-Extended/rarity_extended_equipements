@@ -34,11 +34,11 @@ contract rarity_extended_equipement_primary_weapon is rarity_extended_equipement
         IEquipementCodexType3.Item memory item = IEquipementCodexType3(_codex).item_by_id(_item_type);
         if (item.encumbrance >= 4) {
             // Check that no secondary weapon is equiped
-            (,address registrySecWeapon,,) = IEquipementWrapper(equipementWrapper).getEquipementBySlot(_adventurer, 6);
+            (,address registrySecWeapon,,,,) = IEquipementWrapper(equipementWrapper).getEquipementBySlot(_adventurer, 6);
             require(registrySecWeapon == address(0), '!secondary_weapon');
 
             // Check that no shield is equiped
-            (,address registryShield,,) = IEquipementWrapper(equipementWrapper).getEquipementBySlot(_adventurer, 101);
+            (,address registryShield,,,,) = IEquipementWrapper(equipementWrapper).getEquipementBySlot(_adventurer, 101);
             require(registryShield == address(0), '!shield');
         }
     }

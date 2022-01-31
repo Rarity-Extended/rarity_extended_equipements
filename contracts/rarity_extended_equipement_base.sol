@@ -151,12 +151,19 @@ abstract contract rarity_extended_equipement_base is ERC721Holder, Extended, Rar
         }
     }
 
-	function getEquipement(uint _adventurer) public view returns (uint, address, address, bool) {
+	function getEquipement(uint _adventurer) public view returns (uint, address, address, uint8, uint8, bool) {
 		Equipement memory _equipement = equipement[_adventurer];
+		uint8 base_type;
+		uint8 item_type;
+        if (_equipement.registry != address(0)) {
+			(base_type, item_type,,) = IEquipementSource(_equipement.registry).items(_equipement.tokenID);
+		}
 		return (
 			_equipement.tokenID,
 			_equipement.registry,
 			codexes[_equipement.registry],
+			base_type,
+			item_type,
 			_equipement.fromAdventurer
 		);
 	}

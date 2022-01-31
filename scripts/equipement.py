@@ -394,13 +394,13 @@ def deployWithDev():
 	PRIMARY_WEAPONS.addRegistry(THEFOREST_PROXY_ITEMS, THE_FOREST_ADDR, THEFOREST_WEAPONS_CODEX)
 
 	# Perform basic checks, will be the same for every contract because based on the same BASE
-	checkSituations()
-	checkSpecificSituationsBody()
-	checkSpecificSituationsPrimaryWeapon()
-	checkSpecificSituationsSecondaryWeapon()
-	checkSpecificSituationsShield()
+	# checkSituations()
+	# checkSpecificSituationsBody()
+	# checkSpecificSituationsPrimaryWeapon()
+	# checkSpecificSituationsSecondaryWeapon()
+	# checkSpecificSituationsShield()
 
-	checkPrimaryWeaponRarity()
+	# checkPrimaryWeaponRarity()
 
 def main():
 	stealItems()
