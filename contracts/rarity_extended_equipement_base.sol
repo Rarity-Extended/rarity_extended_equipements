@@ -46,6 +46,7 @@ abstract contract rarity_extended_equipement_base is ERC721Holder, Extended, Rar
 	**	- 3 for Weapons
 	**	- 4 for Jewelries
     **	@param _slot: Slot to use
+    **	@param _wrapper: Wrapper contract address
 	*******************************************************************************/
 	constructor(uint8 _equipementItemType, uint8 _slot, address _wrapper) Extended() Rarity(true) {
 		equipementItemType = _equipementItemType;
@@ -87,7 +88,7 @@ abstract contract rarity_extended_equipement_base is ERC721Holder, Extended, Rar
 	**	to unset the armor before it can be transfered to another player.
     **  @param _adventurer: the tokenID of the adventurer we want to assign the armor to
     **	@param _operator: adventurer in which name we are acting for.
-    **	@param _tokenSource: address of the base contract for this item, aka with which we will interact to transfer the item
+    **	@param _registry: address of the base contract for this item, aka with which we will interact to transfer the item
     **	@param _tokenID: the tokenID of the armor
 	*******************************************************************************/
     function set_rEquipement(uint _adventurer, uint _operator, address _registry, uint256 _tokenID) virtual public {
@@ -184,7 +185,8 @@ abstract contract rarity_extended_equipement_base is ERC721Holder, Extended, Rar
 	function removeRegistry(address _registry) public onlyExtended() {
 		require(codexes[_registry] != address(0), "!assigned");
 		codexes[_registry] = address(0);
-		codexes[_registry] = address(0);
+		minters[_registry] = address(0);
+
 		emit RegistrySet(_registry, address(0), address(0));
 	}
 
