@@ -30,10 +30,12 @@ contract rarity_extended_equipement_wrapper is Extended {
     **  - 8 -> Second jewelry
     **  Some slot are virtual like shield (assigned to secondary weapon)
     **  - 101 -> shield
-    **  @param _slot: ID of the slot we want to assign to
     **	@param _equipement: Address of the contract handling the equipement
 	*******************************************************************************/
-    function registerSlot(uint _slot, address _equipement) public onlyExtended() {
+    function registerSlot(address _equipement) public onlyExtended() {
+        require(_equipement != address(0), "!equipement");
+        uint8 _slot = IEquipementBase(_equipement).equipementSlot();
+        require(_slot != 0, "!slot");
         require(slots[_slot] == address(0), '!new');
         slots[_slot] = _equipement;
     }

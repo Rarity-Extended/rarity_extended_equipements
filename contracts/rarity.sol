@@ -32,6 +32,7 @@ abstract contract Rarity {
     **  @dev Check if the _owner has the autorization to act on this tokenID
     **	@param _tokenID: TokenID of the item we want to check
     **	@param _source: address of contract for tokenID 
+    **	@param _operator: the operator to check
 	*******************************************************************************/
     function _isApprovedOrOwnerOfItem(uint _tokenID, IERC721 _source, address _operator) internal view returns (bool) {
         return (

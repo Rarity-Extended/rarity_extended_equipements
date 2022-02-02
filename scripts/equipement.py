@@ -51,18 +51,18 @@ WRAPPER = deployer.deploy(rarity_extended_equipement_wrapper)
 ARMOR_HEAD = deployer.deploy(rarity_extended_equipement_armor_head, 2, 1, WRAPPER)
 ARMOR_BODY = deployer.deploy(rarity_extended_equipement_armor_body, 2, 2, WRAPPER)
 ARMOR_HAND = deployer.deploy(rarity_extended_equipement_armor_hand, 2, 3, WRAPPER)
-ARMOR_FOOT = deployer.deploy(rarity_extended_equipement_armor_foot, 2, 5, WRAPPER)
+ARMOR_FOOT = deployer.deploy(rarity_extended_equipement_armor_foot, 2, 4, WRAPPER)
 PRIMARY_WEAPONS = deployer.deploy(rarity_extended_equipement_primary_weapon, 3, 5, WRAPPER)
 SECONDARY_WEAPONS = deployer.deploy(rarity_extended_equipement_secondary_weapon, 3, 6, WRAPPER)
 SHIELDS = deployer.deploy(rarity_extended_equipement_shield, 2, 101, WRAPPER)
 # Linking the slots, the wrapped and the contracts
-WRAPPER.registerSlot(1, ARMOR_HEAD);
-WRAPPER.registerSlot(2, ARMOR_BODY);
-WRAPPER.registerSlot(3, ARMOR_HAND);
-WRAPPER.registerSlot(4, ARMOR_FOOT);
-WRAPPER.registerSlot(5, PRIMARY_WEAPONS);
-WRAPPER.registerSlot(6, SECONDARY_WEAPONS);
-WRAPPER.registerSlot(101, SHIELDS);
+WRAPPER.registerSlot(ARMOR_HEAD);
+WRAPPER.registerSlot(ARMOR_BODY);
+WRAPPER.registerSlot(ARMOR_HAND);
+WRAPPER.registerSlot(ARMOR_FOOT);
+WRAPPER.registerSlot(PRIMARY_WEAPONS);
+WRAPPER.registerSlot(SECONDARY_WEAPONS);
+WRAPPER.registerSlot(SHIELDS);
 
 def stealItems():
 	RARITY_CRAFTING.safeTransferFrom(OWNER_OF_CRAFTED_SHIELD[0], DEVELOPER[0], OWNER_OF_CRAFTED_SHIELD[2], {'from': OWNER_OF_CRAFTED_SHIELD[0]})
